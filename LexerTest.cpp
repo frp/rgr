@@ -177,13 +177,17 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
         vector<Token> expected2 {
                 { TokenType::int_number, "3", 2 }
         };
+        vector<Token> expected3 {
+                { TokenType::op_separator, "\n", 1 },
+                { TokenType::int_number, "3", 2 }
+        };
 
         REQUIRE (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected);
         REQUIRE (lexString("{gfdgjkfdh\nghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected2);
 
         REQUIRE_THROWS (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df"));
 
-        //REQUIRE(lexString("{if a > b then c as b - a else c as a - b}\n3") == expected2);
+        REQUIRE(lexString("{if a > b then c as b - a else c as a - b}\n3") == expected3);
 
     }
 }

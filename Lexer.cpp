@@ -130,6 +130,8 @@ namespace
 
             if (ptr == input.size())
                 return "";
+
+            return "{}";
         }
 
         if (input[ptr] == '(')
@@ -175,14 +177,26 @@ std::vector<Token> lexString(std::string str)
 {
     size_t ptr = 0, line = 1;
     string nextToken;
-    vector<Token> result;
+    vector<Token> tokens;
     while ((nextToken = extractToken(ptr, str, line)) != "")
     {
-        result.push_back(parseToken(nextToken, line));
+        if (nextToken == "{}")
+            continue;
+
+        tokens.push_back(parseToken(nextToken, line));
 
         if (nextToken == "\n")
             line++;
     }
+
+    vector<Token> result;
+    for (size_t i = 0; i < tokens.size(); i++)
+    {
+        if (tokens[i].type == TokenType::op_separator && (i + 1 == tokens.size() || tokens[i + 1].type == TokenType::op_separator || tokens[i + 1].type == TokenType::end))
+            continue;
+        result.push_back(tokens[i]);
+    }
+
     return result;
 }
 

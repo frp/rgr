@@ -7,12 +7,13 @@ int main()
 {
     ifstream in("input.txt");
     ofstream out("ast.txt");
+    ofstream tokfile("tokens.txt");
     if (!in)
     {
         cout << "Couldn't open input file\n";
         return 0;
     }
-    if (!out)
+    if (!out || !tokfile)
     {
         cout << "Couldn't open output file\n";
         return 0;
@@ -25,12 +26,12 @@ int main()
 
         for (auto& tok : lexString(code))
         {
-            cout << prettyPrintTokType(tok.type) << "\n";
+            tokfile << prettyPrintTokType(tok.type) << "\n";
         }
 
         out << parseInputWithSemantic(make_shared<ProgramNode>(), code)->dump();
 
-        cout << "Parsed successfully, output is dumped to ast.txt file";
+        cout << "Parsed successfully, abstract syntax tree is dumped to ast.txt file, tokens are dumped to tokens.txt file";
     }
     catch(exception& e)
     {
