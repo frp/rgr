@@ -8,8 +8,6 @@
 #include <map>
 using namespace std;
 
-//enum class TokenType { relation_op, add_op, mul_op, un_op, bool_const, identifier, int_number, float_number, dim, type, if_, then_, else_, for_, to_, do_, while_, read_, write_ };
-
 namespace
 {
     map<TokenType, regex> regexps = {
@@ -21,8 +19,8 @@ namespace
             { TokenType::identifier, regex("[A-Za-z][A-Za-z0-9]*") },
             { TokenType::int_number, regex("[0-1]+[bB]|[0-7]+[oO]|[0-9A-Fa-f]+[hH]|[0-9]+[dD]?") },
             { TokenType::float_number, regex("[0-9]+[eE][\\+\\-]?[0-9]+|[0-9]*\\.[0-9]+([eE][\\+\\-]?[0-9]+)?")},
-            { TokenType::dim, regex("dim")},
-            { TokenType::type, regex("integer|float|bool")},
+            { TokenType::var_, regex("var")},
+            { TokenType::type, regex("int|float|bool")},
             { TokenType::if_, regex("if")},
             { TokenType::then_, regex("then")},
             { TokenType::else_, regex("else")},
@@ -34,11 +32,13 @@ namespace
             { TokenType::write_, regex("write")},
             { TokenType::as_, regex("as")},
             { TokenType::comma, regex(",") },
-            { TokenType::op_separator, regex(":|\n") },
+            { TokenType::op_separator, regex(";") },
             { TokenType::openbr, regex("\\(") },
             { TokenType::closebr, regex("\\)") },
             { TokenType::begin, regex("begin") },
             { TokenType::end, regex("end") },
+            { TokenType::endwithdot, regex("end.") },
+            { TokenType::program, regex("program") },
     };
 
     map<TokenType, string> dumpClasses = {
@@ -50,7 +50,7 @@ namespace
             { TokenType::identifier, "identifier" },
             { TokenType::int_number, "integral number" },
             { TokenType::float_number, "float number" },
-            { TokenType::dim, "dim" },
+            { TokenType::var_, "var" },
             { TokenType::type, "type" },
             { TokenType::if_, "if"},
             { TokenType::then_, "then"},
@@ -68,11 +68,15 @@ namespace
             { TokenType::closebr, ")" },
             { TokenType::begin, "begin" },
             { TokenType::end, "end" },
+            { TokenType::endwithdot, "end." },
+            { TokenType::program, "program" },
     };
 
     vector<TokenType> priorityList = {
             TokenType::begin,
             TokenType::end,
+            TokenType::endwithdot,
+            TokenType::program,
             TokenType::openbr,
             TokenType::closebr,
             TokenType::op_separator,
@@ -83,7 +87,7 @@ namespace
             TokenType::for_,
             TokenType::to_,
             TokenType::do_,
-            TokenType::dim,
+            TokenType::var_,
             TokenType::while_,
             TokenType::read_,
             TokenType::write_,
@@ -107,7 +111,7 @@ namespace
             ptr++;
 
             if (input[ptr-1] == '\n')
-                return "\n";
+                line++;
         }
 
         if (ptr == input.size())
@@ -150,10 +154,10 @@ namespace
         bool startWithDigit = isdigit(input[ptr]) || input[ptr] == '.';
 
         while (ptr < input.size()
-               && input[ptr] != '(' && input[ptr] != ')' && (
+               && ((input[ptr] != '(' && input[ptr] != ')' && (
                 startWithDigit && (isalnum(input[ptr]) || input[ptr] == '.' || (ptr > 0 && tolower(input[ptr-1]) == 'e' && (input[ptr] == '+' || input[ptr] == '-')))
                 || startWithAlnum && isalnum(input[ptr])
-                || !startWithAlnum && !isspace(input[ptr]) && !isalnum(input[ptr])))
+                || !startWithAlnum && !isspace(input[ptr]) && !isalnum(input[ptr]))) || (result == "end" && input[ptr] == '.')))
         {
             result += input[ptr];
             ptr++;
@@ -192,7 +196,7 @@ std::vector<Token> lexString(std::string str)
     vector<Token> result;
     for (size_t i = 0; i < tokens.size(); i++)
     {
-        if (tokens[i].type == TokenType::op_separator && (i + 1 == tokens.size() || tokens[i + 1].type == TokenType::op_separator || tokens[i + 1].type == TokenType::end))
+        if (tokens[i].type == TokenType::op_separator && (i + 1 == tokens.size() || tokens[i + 1].type == TokenType::op_separator || tokens[i + 1].type == TokenType::end || tokens[i + 1].type == TokenType::endwithdot || tokens[i + 1].type == TokenType::begin))
             continue;
         result.push_back(tokens[i]);
     }

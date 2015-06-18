@@ -10,8 +10,8 @@
 #include <vector>
 #include <iostream>
 
-enum class TokenType { bool_const, dim, type, if_, then_, else_, for_, to_, do_, while_, read_, write_, relation_op, add_op,
-    mul_op, un_op, identifier, int_number, float_number, as_, comma, op_separator, eof, openbr, closebr, begin, end, any  };
+enum class TokenType { bool_const, var_, type, if_, then_, else_, for_, to_, do_, while_, read_, write_, relation_op, add_op,
+    mul_op, un_op, identifier, int_number, float_number, as_, comma, op_separator, eof, openbr, closebr, begin, end, program, endwithdot, any  };
 
 struct Token
 {

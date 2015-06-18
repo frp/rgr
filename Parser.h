@@ -16,7 +16,7 @@ class SyntaxNode;
 typedef std::shared_ptr<SyntaxNode> SyntaxNodePtr;
 typedef std::list<SyntaxNodePtr> SyntaxStack;
 
-enum class DataType { None, Integer, Float, Bool, Invalid };
+enum class DataType { None, Int, Float, Bool, Invalid };
 
 class SemanticContext
 {
@@ -70,8 +70,8 @@ protected:
     TokenType acceptedToken() { return TokenType::int_number; };
     virtual std::string className() { return "IntNumberNode"; }
 public:
-    IntNumberNode() { type = DataType::Integer; }
-    IntNumberNode(std::string number) { tokenContent = number; type = DataType::Integer; }
+    IntNumberNode() { type = DataType::Int; }
+    IntNumberNode(std::string number) { tokenContent = number; type = DataType::Int; }
 };
 
 class FloatNumberNode : public OneTokenNode, public WithType
@@ -317,16 +317,6 @@ public:
     DeclarationNode() {}
     DeclarationNode(SyntaxNodeList nodes) { subNodes = nodes; }
     virtual void semanticProcess(SemanticContext &context);
-};
-
-class DimNode : public OneTokenNode
-{
-protected:
-    TokenType acceptedToken() { return TokenType::dim; }
-    virtual std::string className() { return "DimNode"; }
-public:
-    DimNode() {}
-    DimNode(std::string content) { tokenContent = content; }
 };
 
 class TypeNode : public OneTokenNode
@@ -600,6 +590,26 @@ public:
     BeginNode(std::string content) { tokenContent = content; }
 };
 
+class ProgramTNode : public OneTokenNode
+{
+protected:
+    TokenType acceptedToken() { return TokenType::program; }
+    virtual std::string className() { return "ProgramTNode"; }
+public:
+    ProgramTNode() {}
+    ProgramTNode(std::string content) { tokenContent = content; }
+};
+
+class VarNode : public OneTokenNode
+{
+protected:
+    TokenType acceptedToken() { return TokenType::var_; }
+    virtual std::string className() { return "VarNode"; }
+public:
+    VarNode() {}
+    VarNode(std::string content) { tokenContent = content; }
+};
+
 class EndNode : public OneTokenNode
 {
 protected:
@@ -618,6 +628,16 @@ protected:
 public:
     OperatorSepNode() {}
     OperatorSepNode(std::string content) { tokenContent = content; }
+};
+
+class EndWithDotNode : public OneTokenNode
+{
+protected:
+    TokenType acceptedToken() { return TokenType::endwithdot; }
+    virtual std::string className() { return "EndWithDotNode"; }
+public:
+    EndWithDotNode() {}
+    EndWithDotNode(std::string content) { tokenContent = content; }
 };
 
 class OperatorListNode : public ExpandableNode
@@ -651,25 +671,25 @@ public:
     ProgramNode(SyntaxNodeList nodes) { subNodes = nodes; }
 };
 
-class ProgramItemNode : public TransformableNode
+class DeclarationListNode : public ExpandableNode
 {
 protected:
-    virtual std::string className() { return "ProgramItemNode"; }
-    virtual TransformationMap transformationMap();
+    virtual SyntaxNodeList expand();
+    virtual std::string className() { return "DeclarationListNode"; }
 public:
-    ProgramItemNode() {}
-    ProgramItemNode(SyntaxNodePtr innerNode) { subNodes.push_back(innerNode); }
+    DeclarationListNode() {}
+    DeclarationListNode(SyntaxNodeList nodes) { subNodes = nodes; }
 };
 
-class ProgramTailNode : public TailNode
+class DeclarationListTailNode : public TailNode
 {
 protected:
     virtual std::set<TokenType> acceptedTokens();
     virtual SyntaxNodeList expand();
-    virtual std::string className() { return "ProgramTailNode"; }
+    virtual std::string className() { return "DeclarationListTailNode"; }
 public:
-    ProgramTailNode() {}
-    ProgramTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
+    DeclarationListTailNode() {}
+    DeclarationListTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
 };
 
 SyntaxNodePtr parseInput(SyntaxNodePtr target, std::vector<Token> tokens);

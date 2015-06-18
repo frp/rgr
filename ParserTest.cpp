@@ -97,28 +97,28 @@ TEST_CASE( "main test" )
         REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("begin while a + b < 5 do c as c + 1 end")));
 
         REQUIRE_NOTHROW(parseInput(make_shared<ProgramNode>(),
-                                   lexString("dim a integer : dim b bool : if a > b then a as a + b else b as a + b")));
+                                   lexString("program var int a begin a as 5 end.")));
 
         // check case when there's more than one operator separator
         REQUIRE_NOTHROW(parseInput(make_shared<ProgramNode>(),
-                                   lexString("dim a integer : dim b bool : if a > b then a as a + b else b as a + b")));
+                                   lexString("program var int a; bool b begin if a > b then a as a + b else b as a + b end.")));
     }
 
     SECTION ("identifier existence checks") {
         REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "a"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer : read(a,b,c)"));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : read(a,b,c)"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : read(a,b)"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a,b,c begin read(a) end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a,b,c begin read(a,b,c) end."));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a,b begin read(a,b,c) end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a,b begin read(a,b) end."));
     }
 
     SECTION ("type checks on assignment") {
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a integer : a as 5"));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a integer : a as 5.1"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : a as 2+3"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b bool : a as a or b"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b float : a as 2+3.0*(2+4)"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a bool : dim b integer : a as b < 3 "));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a bool : dim b integer : a as b - 3 "));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a begin a as 5 end."));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a begin a as 5.1 end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var int a,b; begin a as 2+3 end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var bool a,b begin a as a or b end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var float a,b begin a as 2+3.0*(2+4) end."));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "program var bool a; int b begin a as b < 3 end."));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "program var bool a; int b begin a as b - 3 end."));
     }
 }
