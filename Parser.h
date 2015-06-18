@@ -16,18 +16,37 @@ class SyntaxNode;
 typedef std::shared_ptr<SyntaxNode> SyntaxNodePtr;
 typedef std::list<SyntaxNodePtr> SyntaxStack;
 
+enum class DataType { None, Integer, Float, Bool, Invalid };
+
+class SemanticContext
+{
+private:
+    std::map<std::string, DataType> variables;
+public:
+    void declareVariable(std::string name, DataType type);
+    DataType getVariableType(std::string name);
+};
+
+class WithType
+{
+protected:
+    DataType type;
+public:
+    WithType() { type = DataType::Invalid; }
+    DataType getType() { return type; }
+};
 
 class SyntaxNode
 {
 protected:
     virtual std::string className() { return "SyntaxNode"; }
-
-    virtual std::string dumpInternal() { return className() + "\n"; };
+    virtual std::string dumpInternal();
 public:
     virtual ~SyntaxNode() {}
     virtual bool feed(SyntaxStack& st, const Token& tok) = 0;
 
     virtual std::string dump(int shift = 0);
+    virtual void semanticProcess(SemanticContext &context) = 0;
 };
 
 class OneTokenNode : public SyntaxNode
@@ -37,34 +56,34 @@ protected:
     std::string tokenContent;
 
     virtual std::string className() { return "OneTokenNode"; }
-    virtual std::string dumpInternal() { return className() + " { " + tokenContent + " }\n"; }
+    virtual std::string dumpInternal();
 public:
     virtual bool feed(SyntaxStack& st, const Token& tok);
+    virtual void semanticProcess(SemanticContext &context);
+    std::string getContent() { return tokenContent; }
 };
 
-class IntNumberNode : public OneTokenNode
+class IntNumberNode : public OneTokenNode, public WithType
 {
 protected:
     TokenType acceptedToken() { return TokenType::int_number; };
-
     virtual std::string className() { return "IntNumberNode"; }
 public:
-    IntNumberNode() {}
-    IntNumberNode(std::string number) { tokenContent = number; }
+    IntNumberNode() { type = DataType::Integer; }
+    IntNumberNode(std::string number) { tokenContent = number; type = DataType::Integer; }
 };
 
-class FloatNumberNode : public OneTokenNode
+class FloatNumberNode : public OneTokenNode, public WithType
 {
 protected:
     TokenType acceptedToken() { return TokenType::float_number; }
-
     virtual std::string className() { return "FloatNumberNode"; }
 public:
-    FloatNumberNode() {}
-    FloatNumberNode(std::string number) { tokenContent = number; }
+    FloatNumberNode() { type = DataType::Float; }
+    FloatNumberNode(std::string number) { tokenContent = number; type = DataType::Float; }
 };
 
-class IdentifierNode : public OneTokenNode
+class IdentifierNode : public OneTokenNode, public WithType
 {
 protected:
     TokenType acceptedToken() { return TokenType::identifier; }
@@ -73,26 +92,31 @@ protected:
 public:
     IdentifierNode() {}
     IdentifierNode(std::string ident) { tokenContent = ident; }
+    virtual void semanticProcess(SemanticContext &context);
 };
 
-typedef std::list<SyntaxNodePtr> SyntaxNodeList;
+typedef std::vector<SyntaxNodePtr> SyntaxNodeList;
 typedef std::map<TokenType, SyntaxNodeList> TransformationMap;
 
-class TransformableNode : public SyntaxNode
+class NodeWithSubnodes : public SyntaxNode
+{
+protected:
+    SyntaxNodeList subNodes;
+public:
+    virtual std::string dump(int shift = 0);
+    virtual void semanticProcess(SemanticContext &context);
+};
+
+class TransformableNode : public NodeWithSubnodes
 {
 protected:
     virtual TransformationMap transformationMap() = 0;
-
     virtual std::string className() { return "TransformableNode"; }
-
-    SyntaxNodeList subNodes;
 public:
     virtual bool feed(SyntaxStack& st, const Token& tok);
-
-    virtual std::string dump(int shift = 0);
 };
 
-class NumberNode : public TransformableNode
+class NumberNode : public TransformableNode, public WithType
 {
 protected:
     virtual std::string className() { return "NumberNode"; }
@@ -100,20 +124,21 @@ protected:
 public:
     NumberNode() {}
     NumberNode(SyntaxNodePtr innerNode) { subNodes.push_back(innerNode); }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
-class BoolConstNode : public OneTokenNode
+class BoolConstNode : public OneTokenNode, public WithType
 {
 protected:
     TokenType acceptedToken() { return TokenType::bool_const; }
-
     virtual std::string className() { return "BoolConstNode"; }
 public:
-    BoolConstNode() {}
-    BoolConstNode(std::string content) { tokenContent = content; }
+    BoolConstNode() { type = DataType::Bool; }
+    BoolConstNode(std::string content) { tokenContent = content; type = DataType::Bool; }
 };
 
-class FactorNode : public TransformableNode
+class FactorNode : public TransformableNode, public WithType
 {
 protected:
     virtual TransformationMap transformationMap();
@@ -121,6 +146,8 @@ protected:
 public:
     FactorNode() {}
     FactorNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class UnaryOperationNode : public OneTokenNode
@@ -133,19 +160,16 @@ public:
     UnaryOperationNode(std::string content) { tokenContent = content; }
 };
 
-class ExpandableNode : public SyntaxNode
+class ExpandableNode : public NodeWithSubnodes
 {
 protected:
     virtual SyntaxNodeList expand() = 0;
     virtual std::string className() { return "ExpandableNode"; }
-
-    SyntaxNodeList subNodes;
 public:
     virtual bool feed(SyntaxStack& st, const Token& tok);
-    virtual std::string dump(int shift = 0);
 };
 
-class AddendNode : public ExpandableNode
+class AddendNode : public ExpandableNode, public WithType
 {
 protected:
     virtual SyntaxNodeList expand();
@@ -153,22 +177,23 @@ protected:
 public:
     AddendNode() {}
     AddendNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
-class TailNode : public SyntaxNode
+class TailNode : public NodeWithSubnodes
 {
 protected:
     virtual std::set<TokenType> acceptedTokens() = 0;
     virtual SyntaxNodeList expand() = 0;
     virtual std::string className() { return "TailNode"; }
-
-    SyntaxNodeList subNodes;
 public:
     virtual bool feed(SyntaxStack& st, const Token& tok);
-    virtual std::string dump(int shift = 0);
+
+    std::string getOperation();
 };
 
-class AddendTailNode : public TailNode
+class AddendTailNode : public TailNode, public WithType
 {
 protected:
     virtual std::set<TokenType> acceptedTokens();
@@ -177,6 +202,8 @@ protected:
 public:
     AddendTailNode() {}
     AddendTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class MulOperationNode : public OneTokenNode
@@ -199,7 +226,7 @@ public:
     AddOperationNode(std::string content) { tokenContent = content; }
 };
 
-class OperandNode : public ExpandableNode
+class OperandNode : public ExpandableNode, public WithType
 {
 protected:
     virtual SyntaxNodeList expand();
@@ -207,9 +234,11 @@ protected:
 public:
     OperandNode() {}
     OperandNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
-class OperandTailNode : public TailNode
+class OperandTailNode : public TailNode, public WithType
 {
 protected:
     virtual std::set<TokenType> acceptedTokens();
@@ -218,6 +247,8 @@ protected:
 public:
     OperandTailNode() {}
     OperandTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class RelationOperationNode : public OneTokenNode
@@ -250,7 +281,7 @@ public:
     CloseBraceNode(std::string content) { tokenContent = content; }
 };
 
-class ExpressionNode : public ExpandableNode
+class ExpressionNode : public ExpandableNode, public WithType
 {
 protected:
     virtual SyntaxNodeList expand();
@@ -258,9 +289,11 @@ protected:
 public:
     ExpressionNode() {}
     ExpressionNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
-class ExpressionTailNode : public TailNode
+class ExpressionTailNode : public TailNode, public WithType
 {
 protected:
     virtual std::set<TokenType> acceptedTokens();
@@ -269,6 +302,8 @@ protected:
 public:
     ExpressionTailNode() {}
     ExpressionTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class DeclarationNode: public ExpandableNode
@@ -279,6 +314,7 @@ protected:
 public:
     DeclarationNode() {}
     DeclarationNode(SyntaxNodeList nodes) { subNodes = nodes; }
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class DimNode : public OneTokenNode
@@ -299,6 +335,7 @@ protected:
 public:
     TypeNode() {}
     TypeNode(std::string content) { tokenContent = content; }
+    DataType getType();
 };
 
 class IdentifierListNode : public ExpandableNode
@@ -309,6 +346,8 @@ protected:
 public:
     IdentifierListNode() {}
     IdentifierListNode(SyntaxNodeList nodes) { subNodes = nodes; }
+    void gatherIdentifiers(std::list<std::string>& identifiers);
+    std::list<std::string> gatherIdentifiers();
 };
 
 class IdentifierListTailNode : public TailNode
@@ -320,6 +359,8 @@ protected:
 public:
     IdentifierListTailNode() {}
     IdentifierListTailNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    void gatherIdentifiers(std::list<std::string>& identifiers);
 };
 
 class CommaNode : public OneTokenNode
@@ -340,6 +381,8 @@ protected:
 public:
     AssignmentNode() {}
     AssignmentNode(SyntaxNodeList nodes) { subNodes = nodes; }
+
+    virtual void semanticProcess(SemanticContext &context);
 };
 
 class AsNode : public OneTokenNode
@@ -628,6 +671,6 @@ public:
 };
 
 SyntaxNodePtr parseInput(SyntaxNodePtr target, std::vector<Token> tokens);
-
+SyntaxNodePtr parseInputWithSemantic(SyntaxNodePtr target, std::string code);
 
 #endif //RGR_PARSER_H

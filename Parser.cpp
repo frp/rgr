@@ -9,7 +9,7 @@ using namespace std;
 bool OneTokenNode::feed(SyntaxStack &st, const Token &tok)
 {
     if (tok.type != acceptedToken())
-        throw runtime_error(prettyPrintTokType(acceptedToken()) + " expected, \"" + tok.content + "\" foud instead");
+        throw runtime_error(prettyPrintTokType(acceptedToken()) + " expected, \"" + tok.content + "\" found instead");
 
     tokenContent = tok.content;
     return true;
@@ -64,10 +64,80 @@ namespace
         return result;
     }
 
-    void pushListToStack(SyntaxStack& st, list<SyntaxNodePtr> lst)
+    void pushListToStack(SyntaxStack& st, SyntaxNodeList lst)
     {
         for (auto it = lst.rbegin(); it != lst.rend(); it++)
             st.push_front(*it);
+    }
+
+    std::string dumpType(DataType type)
+    {
+        return type == DataType::Integer ? "integer" : type == DataType::Float ? "float" : type == DataType::Bool ? "bool" : type == DataType::None ? "none" : "invalid";
+    }
+
+    std::map<tuple<DataType, std::string, DataType>, DataType > compatibilityMatrix {
+            { make_tuple(DataType::Integer, "<", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, ">", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, "<=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, ">=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, "<>", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, "=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Integer, "+", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Integer, "-", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Integer, "*", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Integer, "/", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Integer, "and", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Integer, "or", DataType::Integer), DataType::Integer },
+
+            { make_tuple(DataType::Float, "<", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, ">", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "<=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, ">=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "<>", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "+", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "-", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "*", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Float, "/", DataType::Float), DataType::Bool },
+
+            { make_tuple(DataType::Bool, "and", DataType::Bool), DataType::Bool },
+            { make_tuple(DataType::Bool, "or", DataType::Bool), DataType::Bool },
+            { make_tuple(DataType::Bool, "=", DataType::Bool), DataType::Bool },
+            { make_tuple(DataType::Bool, "<>", DataType::Bool), DataType::Bool },
+
+            { make_tuple(DataType::Float, "<", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, ">", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, "<=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, ">=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, "<>", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, "=", DataType::Integer), DataType::Bool },
+            { make_tuple(DataType::Float, "+", DataType::Integer), DataType::Float },
+            { make_tuple(DataType::Float, "-", DataType::Integer), DataType::Float },
+            { make_tuple(DataType::Float, "*", DataType::Integer), DataType::Float },
+            { make_tuple(DataType::Float, "/", DataType::Integer), DataType::Float },
+
+            { make_tuple(DataType::Integer, "<", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, ">", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, "<=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, ">=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, "<>", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, "=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Integer, "+", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Integer, "-", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Integer, "*", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Integer, "/", DataType::Float), DataType::Float },
+    };
+
+    bool checkTypeCompatibility(std::string operation, DataType op1, DataType op2)
+    {
+        return operation == "" || compatibilityMatrix.count(make_tuple(op1, operation, op2)) > 0;
+    }
+
+    set<string> bool_operations = { "<", ">", "<>", "" };
+
+    DataType getResultType(std::string operation, DataType t1, DataType t2)
+    {
+        return operation == "" ? t1 : compatibilityMatrix.find(make_tuple(t1, operation, t2))->second;
     }
 }
 
@@ -105,7 +175,7 @@ std::string SyntaxNode::dump(int shift)
     return result + dumpInternal();
 }
 
-std::string TransformableNode::dump(int shift)
+std::string NodeWithSubnodes::dump(int shift)
 {
     string result;
     for (int i = 0; i < shift; ++i)
@@ -164,34 +234,6 @@ bool ExpandableNode::feed(SyntaxStack &st, const Token &tok)
     subNodes = expand();
     pushListToStack(st, subNodes);
     return false;
-}
-
-std::string ExpandableNode::dump(int shift)
-{
-    string result;
-    for (int i = 0; i < shift; ++i)
-        result += '\t';
-
-    result += dumpInternal();
-
-    for (auto node : subNodes)
-        result += node->dump(shift + 1);
-
-    return result;
-}
-
-std::string TailNode::dump(int shift)
-{
-    string result;
-    for (int i = 0; i < shift; ++i)
-        result += '\t';
-
-    result += dumpInternal();
-
-    for (auto node : subNodes)
-        result += node->dump(shift + 1);
-
-    return result;
 }
 
 SyntaxNodeList OperandNode::expand()
@@ -354,4 +396,273 @@ std::set<TokenType> ProgramTailNode::acceptedTokens()
 SyntaxNodeList ProgramTailNode::expand()
 {
     return SyntaxNodeList { make_shared<OperatorSepNode>(), make_shared<ProgramNode>() };
+}
+
+void OneTokenNode::semanticProcess(SemanticContext &context)
+{
+}
+
+void SemanticContext::declareVariable(std::string name, DataType type)
+{
+    if (variables.find(name) != variables.end())
+        throw runtime_error("Variable "  + name + " is declared twice");
+
+    variables[name] = type;
+}
+
+void IdentifierNode::semanticProcess(SemanticContext &context)
+{
+    type = context.getVariableType(tokenContent);
+}
+
+DataType SemanticContext::getVariableType(std::string name)
+{
+    if (variables.find(name) == variables.end())
+        throw runtime_error("Variable " + name + " is undeclared");
+
+    return variables[name];
+}
+
+void NodeWithSubnodes::semanticProcess(SemanticContext &context)
+{
+    for (auto node: subNodes)
+        node->semanticProcess(context);
+}
+
+SyntaxNodePtr parseInputWithSemantic(SyntaxNodePtr target, std::string code)
+{
+    SemanticContext context;
+    parseInput(target, lexString(code))->semanticProcess(context);
+    return target;
+}
+
+void DeclarationNode::semanticProcess(SemanticContext &context)
+{
+    IdentifierListNode* identifierListNode = dynamic_cast<IdentifierListNode*>(subNodes[1].get());
+    TypeNode* typeNode = dynamic_cast<TypeNode*>(subNodes[2].get());
+
+    assert(identifierListNode);
+    assert(typeNode);
+
+    for (auto ident : identifierListNode->gatherIdentifiers())
+    {
+        context.declareVariable(ident, typeNode->getType());
+    }
+    NodeWithSubnodes::semanticProcess(context);
+}
+
+DataType TypeNode::getType()
+{
+    if (tokenContent == "integer")
+        return DataType::Integer;
+    else if (tokenContent == "float")
+        return DataType::Float;
+    else if (tokenContent == "bool")
+        return DataType::Bool;
+    else
+        throw runtime_error("Unknown type " + tokenContent);
+}
+
+void IdentifierListNode::gatherIdentifiers(std::list<std::string> &identifiers)
+{
+    IdentifierNode* identifierNode = dynamic_cast<IdentifierNode*>(subNodes[0].get());
+    IdentifierListTailNode* identifierListTailNode = dynamic_cast<IdentifierListTailNode*>(subNodes[1].get());
+
+    assert(identifierNode);
+    assert(identifierListTailNode);
+
+    identifiers.push_back(identifierNode->getContent());
+    identifierListTailNode->gatherIdentifiers(identifiers);
+}
+
+void IdentifierListTailNode::gatherIdentifiers(std::list<std::string> &identifiers)
+{
+    if (subNodes.size() > 1)
+    {
+        IdentifierListNode* identifierListNode = dynamic_cast<IdentifierListNode*>(subNodes[1].get());
+        assert(identifierListNode);
+        identifierListNode->gatherIdentifiers(identifiers);
+    }
+}
+
+std::list<std::string> IdentifierListNode::gatherIdentifiers()
+{
+    std::list<std::string> result;
+    gatherIdentifiers(result);
+    return result;
+}
+
+void NumberNode::semanticProcess(SemanticContext &context)
+{
+    IntNumberNode* intNumberNode = dynamic_cast<IntNumberNode*>(subNodes[0].get());
+    FloatNumberNode* floatNumberNode = dynamic_cast<FloatNumberNode*>(subNodes[0].get());
+
+    assert(intNumberNode || floatNumberNode);
+
+    if (intNumberNode)
+        type = intNumberNode->getType();
+    else
+        type = floatNumberNode->getType();
+
+    NodeWithSubnodes::semanticProcess(context);
+}
+
+void FactorNode::semanticProcess(SemanticContext &context)
+{
+    /*
+     * { TokenType::identifier, SyntaxNodeList { make_shared<IdentifierNode>() } },
+            { TokenType::int_number, SyntaxNodeList { make_shared<NumberNode>() } },
+            { TokenType::float_number, SyntaxNodeList { make_shared<NumberNode>() } },
+            { TokenType::bool_const, SyntaxNodeList { make_shared<BoolConstNode>() } },
+            { TokenType::un_op, SyntaxNodeList { make_shared<UnaryOperationNode>(), make_shared<FactorNode>() } },
+            { TokenType::openbr, SyntaxNodeList { make_shared<OpenBraceNode>(), make_shared<ExpressionNode>(), make_shared<CloseBraceNode>() } }
+     */
+    NodeWithSubnodes::semanticProcess(context);
+
+    WithType* subNode = dynamic_cast<IdentifierNode*>(subNodes[0].get());
+    if (!subNode) subNode = dynamic_cast<NumberNode*>(subNodes[0].get());
+    if (!subNode) subNode = dynamic_cast<BoolConstNode*>(subNodes[0].get());
+    if (!subNode) subNode = subNodes.size() > 1 ? dynamic_cast<OperandNode*>(subNodes[1].get()) : 0;
+    if (!subNode) subNode = subNodes.size() > 1 ? dynamic_cast<ExpressionNode*>(subNodes[1].get()) : 0;
+
+    assert(subNode);
+
+    UnaryOperationNode* unaryOp = dynamic_cast<UnaryOperationNode*>(subNodes[0].get());
+    if (unaryOp && subNode->getType() == DataType::Float)
+        throw "\"not\" operation can't be applied to float";
+
+    type = subNode->getType();
+}
+
+void ExpressionNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    OperandNode* operandNode = dynamic_cast<OperandNode*>(subNodes[0].get());
+    ExpressionTailNode* expressionTailNode = dynamic_cast<ExpressionTailNode*>(subNodes[1].get());
+
+    assert(operandNode);
+    assert(expressionTailNode);
+
+    if (!checkTypeCompatibility(expressionTailNode->getOperation(), operandNode->getType(), expressionTailNode->getType()))
+        throw runtime_error("Types " + dumpType(operandNode->getType()) + " and " + dumpType(expressionTailNode->getType())
+                            + " are not compatible for " + expressionTailNode->getOperation() + " operation");
+
+    if (expressionTailNode->getOperation() == "")
+        type = operandNode->getType();
+    else
+        type = DataType::Bool;
+}
+
+std::string TailNode::getOperation()
+{
+    OneTokenNode* oneTokenNode = subNodes.size() > 0 ? dynamic_cast<OneTokenNode*>(subNodes[0].get()) : 0;
+    return oneTokenNode ? oneTokenNode->getContent() : "";
+}
+
+void AssignmentNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    IdentifierNode* identifierNode = dynamic_cast<IdentifierNode*>(subNodes[0].get());
+    ExpressionNode* expressionNode = dynamic_cast<ExpressionNode*>(subNodes[2].get());
+
+    assert(identifierNode);
+    assert(expressionNode);
+
+    DataType type1 = identifierNode->getType(), type2 = expressionNode->getType();
+
+    if (type1 != type2)
+        if (!(type1 == DataType::Float && type2 == DataType::Integer))
+            throw runtime_error("Can't assign value of type " + dumpType(type2) + " to a variable of type " + dumpType(type1));
+}
+
+void OperandNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    AddendNode* addendNode = dynamic_cast<AddendNode*>(subNodes[0].get());
+    OperandTailNode* operandTailNode = dynamic_cast<OperandTailNode*>(subNodes[1].get());
+
+    assert(addendNode);
+    assert(operandTailNode);
+
+    std::string operation = operandTailNode->getOperation();
+    DataType t1 = addendNode->getType();
+    DataType t2 = operandTailNode->getType();
+
+    if (!checkTypeCompatibility(operation, t1, t2))
+        throw runtime_error("Types " + dumpType(t1) + " and " + dumpType(t2)
+                            + " are not compatible for " + operation + " operation");
+
+    type = getResultType(operation, t1, t2);
+}
+
+void AddendNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    FactorNode* factorNode = dynamic_cast<FactorNode*>(subNodes[0].get());
+    AddendTailNode* addendTailNode = dynamic_cast<AddendTailNode*>(subNodes[1].get());
+
+    assert(factorNode);
+    assert(addendTailNode);
+
+    std::string operation = addendTailNode->getOperation();
+    DataType t1 = factorNode->getType();
+    DataType t2 = addendTailNode->getType();
+
+    if (!checkTypeCompatibility(operation, t1, t2))
+        throw runtime_error("Types " + dumpType(t1) + " and " + dumpType(t2)
+                            + " are not compatible for " + operation + " operation");
+
+    type = getResultType(operation, t1, t2);
+}
+
+void ExpressionTailNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    if (subNodes.size() == 0)
+        type = DataType::None;
+    else
+        type = dynamic_cast<ExpressionNode*>(subNodes[1].get())->getType();
+}
+
+void OperandTailNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    if (subNodes.size() == 0)
+        type = DataType::None;
+    else
+        type = dynamic_cast<OperandNode*>(subNodes[1].get())->getType();
+}
+
+void AddendTailNode::semanticProcess(SemanticContext &context)
+{
+    NodeWithSubnodes::semanticProcess(context);
+
+    if (subNodes.size() == 0)
+        type = DataType::None;
+    else
+        type = dynamic_cast<AddendNode*>(subNodes[1].get())->getType();
+}
+
+std::string SyntaxNode::dumpInternal()
+{
+    WithType* thisWithType = dynamic_cast<WithType*>(this);
+    if (thisWithType)
+        return className() + "(type = " + dumpType(thisWithType->getType()) + ")" + "\n";
+    else
+        return className() + "\n";
+}
+
+std::string OneTokenNode::dumpInternal()
+{
+    WithType* thisWithType = dynamic_cast<WithType*>(this);
+    if (thisWithType)
+        return className() + " { " + tokenContent + " } " + "(type = " + dumpType(thisWithType->getType()) + ")" + "\n";
+    else
+        return className() + className() + " { " + tokenContent + " }\n";
 }

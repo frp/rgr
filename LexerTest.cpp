@@ -180,5 +180,7 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
         REQUIRE (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected);
         REQUIRE (lexString("{gfdgjkfdh\nghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected2);
+
+        REQUIRE_THROWS (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df"));
     }
 }

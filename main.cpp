@@ -4,10 +4,14 @@ using namespace std;
 
 int main()
 {
-    vector<Token> toks = lexString("write(a,b,c)");
-    for (auto& tok: toks)
-        cout << prettyPrintTokType(tok.type) << endl;
-
-    cout << parseInput(make_shared<WritingNode>(), toks)->dump() << endl;
+    //REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer : a : b : c"));
+    try
+    {
+        cout << parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b float : a as 3*(2+4)")->dump(0) << endl;
+    }
+    catch(exception& e)
+    {
+        cout << e.what() << endl;
+    }
     return 0;
 }
