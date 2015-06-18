@@ -1,13 +1,36 @@
-#include <iostream>
+#include <fstream>
 #include "Parser.h"
+
 using namespace std;
 
 int main()
 {
-    //REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer : a : b : c"));
+    ifstream in("input.txt");
+    ofstream out("ast.txt");
+    if (!in)
+    {
+        cout << "Couldn't open input file\n";
+        return 0;
+    }
+    if (!out)
+    {
+        cout << "Couldn't open output file\n";
+        return 0;
+    }
     try
     {
-        cout << parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b float : a as 3*(2+4)")->dump(0) << endl;
+        string s, code;
+        while (getline(in, s))
+            code += s + "\n";
+
+        for (auto& tok : lexString(code))
+        {
+            cout << prettyPrintTokType(tok.type) << "\n";
+        }
+
+        out << parseInputWithSemantic(make_shared<ProgramNode>(), code)->dump();
+
+        cout << "Parsed successfully, output is dumped to ast.txt file";
     }
     catch(exception& e)
     {

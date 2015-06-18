@@ -6,10 +6,17 @@
 #include <cassert>
 using namespace std;
 
+void parsing_error(string error, size_t line)
+{
+    throw runtime_error("Error on line " + to_string(line) + ": " + error);
+}
+
 bool OneTokenNode::feed(SyntaxStack &st, const Token &tok)
 {
     if (tok.type != acceptedToken())
-        throw runtime_error(prettyPrintTokType(acceptedToken()) + " expected, \"" + tok.content + "\" found instead");
+        parsing_error(prettyPrintTokType(acceptedToken()) + " expected, \"" + tok.content + "\" found instead", tok.line);
+
+    line = tok.line;
 
     tokenContent = tok.content;
     return true;
@@ -17,7 +24,7 @@ bool OneTokenNode::feed(SyntaxStack &st, const Token &tok)
 
 SyntaxNodePtr parseInput(SyntaxNodePtr target, std::vector<Token> tokens)
 {
-    tokens.push_back(Token(TokenType::eof, "", tokens.back().line));
+    tokens.push_back(Token(TokenType::eof, "end of file", tokens.back().line));
     SyntaxStack stack;
     stack.push_front(target);
 
@@ -34,11 +41,8 @@ SyntaxNodePtr parseInput(SyntaxNodePtr target, std::vector<Token> tokens)
             token++;
     }
 
-    while (token != tokens.end() && token->type == TokenType::eof)
-        token++;
-
-    if (token != tokens.end())
-        throw runtime_error("End of input expected, \"" + token->content + "\" found instead");
+    if (token != tokens.end() && token->type != TokenType::eof)
+        parsing_error("End of input expected, \"" + token->content + "\" found instead", token->line);
 
     return target;
 }
@@ -150,7 +154,7 @@ bool TransformableNode::feed(SyntaxStack &st, const Token &tok)
         transformation = t_map.find(TokenType::any);
 
     if (transformation == t_map.end())
-        throw runtime_error("Unexpected token \"" + tok.content + "\". Expected token types: " + listTokenTypes(t_map));
+        parsing_error("Unexpected token \"" + tok.content + "\". Expected token types: " + listTokenTypes(t_map), tok.line);
 
     pushListToStack(st, transformation->second);
     subNodes = transformation->second;
@@ -233,6 +237,7 @@ bool ExpandableNode::feed(SyntaxStack &st, const Token &tok)
 {
     subNodes = expand();
     pushListToStack(st, subNodes);
+    line = tok.line;
     return false;
 }
 
@@ -402,23 +407,23 @@ void OneTokenNode::semanticProcess(SemanticContext &context)
 {
 }
 
-void SemanticContext::declareVariable(std::string name, DataType type)
+void SemanticContext::declareVariable(std::string name, DataType type, size_t line)
 {
     if (variables.find(name) != variables.end())
-        throw runtime_error("Variable "  + name + " is declared twice");
+        parsing_error("Variable "  + name + " is redeclared", line);
 
     variables[name] = type;
 }
 
 void IdentifierNode::semanticProcess(SemanticContext &context)
 {
-    type = context.getVariableType(tokenContent);
+    type = context.getVariableType(tokenContent, line);
 }
 
-DataType SemanticContext::getVariableType(std::string name)
+DataType SemanticContext::getVariableType(std::string name, size_t line)
 {
     if (variables.find(name) == variables.end())
-        throw runtime_error("Variable " + name + " is undeclared");
+        parsing_error("Variable " + name + " is undeclared", line);
 
     return variables[name];
 }
@@ -446,7 +451,7 @@ void DeclarationNode::semanticProcess(SemanticContext &context)
 
     for (auto ident : identifierListNode->gatherIdentifiers())
     {
-        context.declareVariable(ident, typeNode->getType());
+        context.declareVariable(ident, typeNode->getType(), line);
     }
     NodeWithSubnodes::semanticProcess(context);
 }
@@ -545,8 +550,8 @@ void ExpressionNode::semanticProcess(SemanticContext &context)
     assert(expressionTailNode);
 
     if (!checkTypeCompatibility(expressionTailNode->getOperation(), operandNode->getType(), expressionTailNode->getType()))
-        throw runtime_error("Types " + dumpType(operandNode->getType()) + " and " + dumpType(expressionTailNode->getType())
-                            + " are not compatible for " + expressionTailNode->getOperation() + " operation");
+        parsing_error("Types " + dumpType(operandNode->getType()) + " and " + dumpType(expressionTailNode->getType())
+                            + " are not compatible for " + expressionTailNode->getOperation() + " operation", line);
 
     if (expressionTailNode->getOperation() == "")
         type = operandNode->getType();
@@ -574,7 +579,7 @@ void AssignmentNode::semanticProcess(SemanticContext &context)
 
     if (type1 != type2)
         if (!(type1 == DataType::Float && type2 == DataType::Integer))
-            throw runtime_error("Can't assign value of type " + dumpType(type2) + " to a variable of type " + dumpType(type1));
+            parsing_error("Can't assign value of type " + dumpType(type2) + " to a variable of type " + dumpType(type1), line);
 }
 
 void OperandNode::semanticProcess(SemanticContext &context)
@@ -592,8 +597,8 @@ void OperandNode::semanticProcess(SemanticContext &context)
     DataType t2 = operandTailNode->getType();
 
     if (!checkTypeCompatibility(operation, t1, t2))
-        throw runtime_error("Types " + dumpType(t1) + " and " + dumpType(t2)
-                            + " are not compatible for " + operation + " operation");
+        parsing_error("Types " + dumpType(t1) + " and " + dumpType(t2)
+                            + " are not compatible for " + operation + " operation", line);
 
     type = getResultType(operation, t1, t2);
 }
@@ -613,8 +618,8 @@ void AddendNode::semanticProcess(SemanticContext &context)
     DataType t2 = addendTailNode->getType();
 
     if (!checkTypeCompatibility(operation, t1, t2))
-        throw runtime_error("Types " + dumpType(t1) + " and " + dumpType(t2)
-                            + " are not compatible for " + operation + " operation");
+        parsing_error("Types " + dumpType(t1) + " and " + dumpType(t2)
+                            + " are not compatible for " + operation + " operation", line);
 
     type = getResultType(operation, t1, t2);
 }

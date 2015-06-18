@@ -23,8 +23,8 @@ class SemanticContext
 private:
     std::map<std::string, DataType> variables;
 public:
-    void declareVariable(std::string name, DataType type);
-    DataType getVariableType(std::string name);
+    void declareVariable(std::string name, DataType type, size_t line);
+    DataType getVariableType(std::string name, size_t line);
 };
 
 class WithType
@@ -53,6 +53,7 @@ class OneTokenNode : public SyntaxNode
 {
 protected:
     virtual TokenType acceptedToken() = 0;
+    size_t line;
     std::string tokenContent;
 
     virtual std::string className() { return "OneTokenNode"; }
@@ -165,6 +166,7 @@ class ExpandableNode : public NodeWithSubnodes
 protected:
     virtual SyntaxNodeList expand() = 0;
     virtual std::string className() { return "ExpandableNode"; }
+    size_t line;
 public:
     virtual bool feed(SyntaxStack& st, const Token& tok);
 };
