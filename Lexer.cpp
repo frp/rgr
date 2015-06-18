@@ -5,6 +5,7 @@
 #include "Lexer.h"
 #include <regex>
 #include <sstream>
+#include <map>
 using namespace std;
 
 //enum class TokenType { relation_op, add_op, mul_op, un_op, bool_const, identifier, int_number, float_number, dim, type, if_, then_, else_, for_, to_, do_, while_, read_, write_ };
