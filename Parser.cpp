@@ -4,11 +4,20 @@
 
 #include "Parser.h"
 #include <cassert>
+#include <sstream>
 using namespace std;
+
+template <typename T>
+std::string tostring(T val)
+{
+    stringstream res;
+    res << val;
+    return res.str();
+}
 
 void parsing_error(string error, size_t line)
 {
-    throw runtime_error("Error on line " + to_string(line) + ": " + error);
+    throw runtime_error("Error on line " + tostring(line) + ": " + error);
 }
 
 bool OneTokenNode::feed(SyntaxStack &st, const Token &tok)
