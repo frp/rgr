@@ -76,22 +76,22 @@ namespace
 
     std::string dumpType(DataType type)
     {
-        return type == DataType::Integer ? "integer" : type == DataType::Float ? "float" : type == DataType::Bool ? "bool" : type == DataType::None ? "none" : "invalid";
+        return type == DataType::Int ? "integer" : type == DataType::Float ? "float" : type == DataType::Bool ? "bool" : type == DataType::None ? "none" : "invalid";
     }
 
     std::map<tuple<DataType, std::string, DataType>, DataType > compatibilityMatrix {
-            { make_tuple(DataType::Integer, "<", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, ">", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, "<=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, ">=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, "<>", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, "=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Integer, "+", DataType::Integer), DataType::Integer },
-            { make_tuple(DataType::Integer, "-", DataType::Integer), DataType::Integer },
-            { make_tuple(DataType::Integer, "*", DataType::Integer), DataType::Integer },
-            { make_tuple(DataType::Integer, "/", DataType::Integer), DataType::Integer },
-            { make_tuple(DataType::Integer, "and", DataType::Integer), DataType::Integer },
-            { make_tuple(DataType::Integer, "or", DataType::Integer), DataType::Integer },
+            { make_tuple(DataType::Int, "<", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, ">", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, "<=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, ">=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, "<>", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, "=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Int, "+", DataType::Int), DataType::Int},
+            { make_tuple(DataType::Int, "-", DataType::Int), DataType::Int},
+            { make_tuple(DataType::Int, "*", DataType::Int), DataType::Int},
+            { make_tuple(DataType::Int, "/", DataType::Int), DataType::Int},
+            { make_tuple(DataType::Int, "and", DataType::Int), DataType::Int},
+            { make_tuple(DataType::Int, "or", DataType::Int), DataType::Int},
 
             { make_tuple(DataType::Float, "<", DataType::Float), DataType::Bool },
             { make_tuple(DataType::Float, ">", DataType::Float), DataType::Bool },
@@ -109,27 +109,27 @@ namespace
             { make_tuple(DataType::Bool, "=", DataType::Bool), DataType::Bool },
             { make_tuple(DataType::Bool, "<>", DataType::Bool), DataType::Bool },
 
-            { make_tuple(DataType::Float, "<", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, ">", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, "<=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, ">=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, "<>", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, "=", DataType::Integer), DataType::Bool },
-            { make_tuple(DataType::Float, "+", DataType::Integer), DataType::Float },
-            { make_tuple(DataType::Float, "-", DataType::Integer), DataType::Float },
-            { make_tuple(DataType::Float, "*", DataType::Integer), DataType::Float },
-            { make_tuple(DataType::Float, "/", DataType::Integer), DataType::Float },
+            { make_tuple(DataType::Float, "<", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, ">", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, "<=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, ">=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, "<>", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, "=", DataType::Int), DataType::Bool },
+            { make_tuple(DataType::Float, "+", DataType::Int), DataType::Float },
+            { make_tuple(DataType::Float, "-", DataType::Int), DataType::Float },
+            { make_tuple(DataType::Float, "*", DataType::Int), DataType::Float },
+            { make_tuple(DataType::Float, "/", DataType::Int), DataType::Float },
 
-            { make_tuple(DataType::Integer, "<", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, ">", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, "<=", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, ">=", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, "<>", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, "=", DataType::Float), DataType::Bool },
-            { make_tuple(DataType::Integer, "+", DataType::Float), DataType::Float },
-            { make_tuple(DataType::Integer, "-", DataType::Float), DataType::Float },
-            { make_tuple(DataType::Integer, "*", DataType::Float), DataType::Float },
-            { make_tuple(DataType::Integer, "/", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Int, "<", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, ">", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, "<=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, ">=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, "<>", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, "=", DataType::Float), DataType::Bool },
+            { make_tuple(DataType::Int, "+", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Int, "-", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Int, "*", DataType::Float), DataType::Float },
+            { make_tuple(DataType::Int, "/", DataType::Float), DataType::Float },
     };
 
     bool checkTypeCompatibility(std::string operation, DataType op1, DataType op2)
@@ -273,7 +273,7 @@ SyntaxNodeList ExpressionTailNode::expand()
 
 SyntaxNodeList DeclarationNode::expand()
 {
-    return SyntaxNodeList { make_shared<DimNode>(), make_shared<IdentifierListNode>(), make_shared<TypeNode>() };
+    return SyntaxNodeList { make_shared<TypeNode>(), make_shared<IdentifierListNode>() };
 }
 
 SyntaxNodeList IdentifierListNode::expand()
@@ -382,25 +382,27 @@ SyntaxNodeList OperatorListTailNode::expand()
 
 SyntaxNodeList ProgramNode::expand()
 {
-    return SyntaxNodeList { make_shared<ProgramItemNode>(), make_shared<ProgramTailNode>() };
+    return SyntaxNodeList { make_shared<BeginNode>(), make_shared<ProgramItemsNode>(), make_shared<EndNode>() };
 }
 
 TransformationMap ProgramItemNode::transformationMap()
 {
     return TransformationMap {
-            { TokenType::dim, SyntaxNodeList { make_shared<DeclarationNode>() } },
-            { TokenType::any, SyntaxNodeList { make_shared<OperatorNode>() } },
+            { TokenType::type, SyntaxNodeList { make_shared<DeclarationNode>(), make_shared<OperatorSepNode>() } },
+            { TokenType::any, SyntaxNodeList { make_shared<OperatorNode>(), make_shared<OperatorSepNode>() } },
     };
 }
 
 std::set<TokenType> ProgramTailNode::acceptedTokens()
 {
-    return std::set<TokenType> { TokenType::op_separator };
+    set<TokenType> result = allTokens;
+    result.erase(TokenType::end);
+    return result;
 }
 
 SyntaxNodeList ProgramTailNode::expand()
 {
-    return SyntaxNodeList { make_shared<OperatorSepNode>(), make_shared<ProgramNode>() };
+    return SyntaxNodeList { make_shared<ProgramItemsNode>() };
 }
 
 void OneTokenNode::semanticProcess(SemanticContext &context)
@@ -444,7 +446,7 @@ SyntaxNodePtr parseInputWithSemantic(SyntaxNodePtr target, std::string code)
 void DeclarationNode::semanticProcess(SemanticContext &context)
 {
     IdentifierListNode* identifierListNode = dynamic_cast<IdentifierListNode*>(subNodes[1].get());
-    TypeNode* typeNode = dynamic_cast<TypeNode*>(subNodes[2].get());
+    TypeNode* typeNode = dynamic_cast<TypeNode*>(subNodes[0].get());
 
     assert(identifierListNode);
     assert(typeNode);
@@ -458,8 +460,8 @@ void DeclarationNode::semanticProcess(SemanticContext &context)
 
 DataType TypeNode::getType()
 {
-    if (tokenContent == "integer")
-        return DataType::Integer;
+    if (tokenContent == "int")
+        return DataType::Int;
     else if (tokenContent == "float")
         return DataType::Float;
     else if (tokenContent == "bool")
@@ -578,7 +580,7 @@ void AssignmentNode::semanticProcess(SemanticContext &context)
     DataType type1 = identifierNode->getType(), type2 = expressionNode->getType();
 
     if (type1 != type2)
-        if (!(type1 == DataType::Float && type2 == DataType::Integer))
+        if (!(type1 == DataType::Float && type2 == DataType::Int))
             parsing_error("Can't assign value of type " + dumpType(type2) + " to a variable of type " + dumpType(type1), line);
 }
 
@@ -670,4 +672,9 @@ std::string OneTokenNode::dumpInternal()
         return className() + " { " + tokenContent + " } " + "(type = " + dumpType(thisWithType->getType()) + ")" + "\n";
     else
         return className() + className() + " { " + tokenContent + " }\n";
+}
+
+SyntaxNodeList ProgramItemsNode::expand()
+{
+    return SyntaxNodeList { make_shared<ProgramItemNode>(), make_shared<ProgramTailNode>() };
 }

@@ -21,8 +21,7 @@ namespace
             { TokenType::identifier, regex("[A-Za-z][A-Za-z0-9]*") },
             { TokenType::int_number, regex("[0-1]+[bB]|[0-7]+[oO]|[0-9A-Fa-f]+[hH]|[0-9]+[dD]?") },
             { TokenType::float_number, regex("[0-9]+[eE][\\+\\-]?[0-9]+|[0-9]*\\.[0-9]+([eE][\\+\\-]?[0-9]+)?")},
-            { TokenType::dim, regex("dim")},
-            { TokenType::type, regex("integer|float|bool")},
+            { TokenType::type, regex("int|float|bool")},
             { TokenType::if_, regex("if")},
             { TokenType::then_, regex("then")},
             { TokenType::else_, regex("else")},
@@ -34,11 +33,11 @@ namespace
             { TokenType::write_, regex("write")},
             { TokenType::as_, regex("as")},
             { TokenType::comma, regex(",") },
-            { TokenType::op_separator, regex(":|\n") },
+            { TokenType::op_separator, regex(";") },
             { TokenType::openbr, regex("\\(") },
             { TokenType::closebr, regex("\\)") },
-            { TokenType::begin, regex("begin") },
-            { TokenType::end, regex("end") },
+            { TokenType::begin, regex("\\{") },
+            { TokenType::end, regex("\\}") },
     };
 
     map<TokenType, string> dumpClasses = {
@@ -50,7 +49,6 @@ namespace
             { TokenType::identifier, "identifier" },
             { TokenType::int_number, "integral number" },
             { TokenType::float_number, "float number" },
-            { TokenType::dim, "dim" },
             { TokenType::type, "type" },
             { TokenType::if_, "if"},
             { TokenType::then_, "then"},
@@ -66,8 +64,8 @@ namespace
             { TokenType::op_separator, "operation separator"},
             { TokenType::openbr, "(" },
             { TokenType::closebr, ")" },
-            { TokenType::begin, "begin" },
-            { TokenType::end, "end" },
+            { TokenType::begin, "{" },
+            { TokenType::end, "}" },
     };
 
     vector<TokenType> priorityList = {
@@ -83,7 +81,6 @@ namespace
             TokenType::for_,
             TokenType::to_,
             TokenType::do_,
-            TokenType::dim,
             TokenType::while_,
             TokenType::read_,
             TokenType::write_,
@@ -107,15 +104,16 @@ namespace
             ptr++;
 
             if (input[ptr-1] == '\n')
-                return "\n";
+                line++;
         }
 
         if (ptr == input.size())
             return "";
 
-        if (input[ptr] == '{')
+        if (ptr + 1 < input.size() && input[ptr] == '/' && input[ptr + 1] == '*')
         {
-            while (ptr < input.size() && input[ptr] != '}')
+            ptr += 2;
+            while (ptr + 1 < input.size() && input[ptr] != '*' && input[ptr + 1] != '/')
             {
                 if (input[ptr] == '\n')
                     line++;
@@ -123,7 +121,9 @@ namespace
                 ptr++;
             }
 
-            if (ptr == input.size())
+            ptr++;
+
+            if (ptr >= input.size())
                 throw runtime_error("Comment is not finished");
 
             ptr++;
@@ -163,6 +163,34 @@ namespace
     }
 };
 
+std::set<TokenType> allTokens = {
+        TokenType::begin,
+        TokenType::end,
+        TokenType::openbr,
+        TokenType::closebr,
+        TokenType::op_separator,
+        TokenType::bool_const,
+        TokenType::if_,
+        TokenType::then_,
+        TokenType::else_,
+        TokenType::for_,
+        TokenType::to_,
+        TokenType::do_,
+        TokenType::while_,
+        TokenType::read_,
+        TokenType::write_,
+        TokenType::as_,
+        TokenType::un_op,
+        TokenType::type,
+        TokenType::comma,
+        TokenType::relation_op,
+        TokenType::add_op,
+        TokenType::mul_op,
+        TokenType::int_number,
+        TokenType::float_number,
+        TokenType::identifier
+};
+
 Token parseToken(string token, size_t line)
 {
     for (auto type: priorityList)
@@ -192,8 +220,8 @@ std::vector<Token> lexString(std::string str)
     vector<Token> result;
     for (size_t i = 0; i < tokens.size(); i++)
     {
-        if (tokens[i].type == TokenType::op_separator && (i + 1 == tokens.size() || tokens[i + 1].type == TokenType::op_separator || tokens[i + 1].type == TokenType::end))
-            continue;
+        /*if (tokens[i].type == TokenType::op_separator && (i + 1 == tokens.size() || tokens[i + 1].type == TokenType::op_separator || tokens[i + 1].type == TokenType::end))
+            continue;*/
         result.push_back(tokens[i]);
     }
 

@@ -76,9 +76,9 @@ TEST_CASE( "main test" )
         REQUIRE_NOTHROW(parseInput(make_shared<ForLoopNode>(), lexString("for a as 3 to 5 do c as d + e")));
 
         REQUIRE_NOTHROW(parseInput(make_shared<WhileLoopNode>(), lexString("while a + b < 5 do c as c + 1")));
-        REQUIRE_NOTHROW(parseInput(make_shared<NestedOperatorNode>(), lexString("begin a as 5 end")));
+        REQUIRE_NOTHROW(parseInput(make_shared<NestedOperatorNode>(), lexString("{ a as 5 }")));
         REQUIRE_NOTHROW(
-                parseInput(make_shared<NestedOperatorNode>(), lexString("begin while a + b < 5 do c as c + 1 end")));
+                parseInput(make_shared<NestedOperatorNode>(), lexString("{ while a + b < 5 do c as c + 1 }")));
 
 
         REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("read(a,b,c)")));
@@ -93,32 +93,32 @@ TEST_CASE( "main test" )
         REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("for a as 3 to 5 do c as d + e")));
 
         REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("while a + b < 5 do c as c + 1")));
-        REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("begin a as 5 end")));
-        REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("begin while a + b < 5 do c as c + 1 end")));
+        REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("{ a as 5 }")));
+        REQUIRE_NOTHROW(parseInput(make_shared<OperatorNode>(), lexString("{ while a + b < 5 do c as c + 1 }")));
 
         REQUIRE_NOTHROW(parseInput(make_shared<ProgramNode>(),
-                                   lexString("dim a integer : dim b bool : if a > b then a as a + b else b as a + b")));
+                                   lexString("{ int a; bool b; if a > b then a as a + b else b as a + b; }")));
 
         // check case when there's more than one operator separator
         REQUIRE_NOTHROW(parseInput(make_shared<ProgramNode>(),
-                                   lexString("dim a integer : dim b bool : if a > b then a as a + b else b as a + b")));
+                                   lexString("{ int a; bool b; if a > b then a as a + b else b as a + b; }")));
     }
 
     SECTION ("identifier existence checks") {
         REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "a"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b,c integer : read(a,b,c)"));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : read(a,b,c)"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : read(a,b)"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a,b,c; }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a,b,c ; read(a,b,c); }"));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a,b; read(a,b,c); }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a,b; read(a,b); }"));
     }
 
     SECTION ("type checks on assignment") {
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a integer : a as 5"));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a integer : a as 5.1"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b integer : a as 2+3"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b bool : a as a or b"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a,b float : a as 2+3.0*(2+4)"));
-        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a bool : dim b integer : a as b < 3 "));
-        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "dim a bool : dim b integer : a as b - 3 "));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a; a as 5; }"));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a; a as 5.1; }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ int a,b; a as 2+3; }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ bool a,b; a as a or b; }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ float a,b; a as 2+3.0*(2+4); }"));
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "{ bool a ; int b; a as b < 3; }"));
+        REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "{ bool a; int b; a as b - 3; }"));
     }
 }

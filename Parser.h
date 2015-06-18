@@ -16,7 +16,7 @@ class SyntaxNode;
 typedef std::shared_ptr<SyntaxNode> SyntaxNodePtr;
 typedef std::list<SyntaxNodePtr> SyntaxStack;
 
-enum class DataType { None, Integer, Float, Bool, Invalid };
+enum class DataType { None, Int, Float, Bool, Invalid };
 
 class SemanticContext
 {
@@ -70,8 +70,8 @@ protected:
     TokenType acceptedToken() { return TokenType::int_number; };
     virtual std::string className() { return "IntNumberNode"; }
 public:
-    IntNumberNode() { type = DataType::Integer; }
-    IntNumberNode(std::string number) { tokenContent = number; type = DataType::Integer; }
+    IntNumberNode() { type = DataType::Int; }
+    IntNumberNode(std::string number) { tokenContent = number; type = DataType::Int; }
 };
 
 class FloatNumberNode : public OneTokenNode, public WithType
@@ -317,16 +317,6 @@ public:
     DeclarationNode() {}
     DeclarationNode(SyntaxNodeList nodes) { subNodes = nodes; }
     virtual void semanticProcess(SemanticContext &context);
-};
-
-class DimNode : public OneTokenNode
-{
-protected:
-    TokenType acceptedToken() { return TokenType::dim; }
-    virtual std::string className() { return "DimNode"; }
-public:
-    DimNode() {}
-    DimNode(std::string content) { tokenContent = content; }
 };
 
 class TypeNode : public OneTokenNode
@@ -649,6 +639,16 @@ protected:
 public:
     ProgramNode() {}
     ProgramNode(SyntaxNodeList nodes) { subNodes = nodes; }
+};
+
+class ProgramItemsNode : public ExpandableNode
+{
+protected:
+    virtual SyntaxNodeList expand();
+    virtual std::string className() { return "ProgramItemsNode"; }
+public:
+    ProgramItemsNode() {}
+    ProgramItemsNode(SyntaxNodeList nodes) { subNodes = nodes; }
 };
 
 class ProgramItemNode : public TransformableNode

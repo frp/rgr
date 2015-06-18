@@ -34,7 +34,6 @@ TEST_CASE( "token types test", "[parseToken]" ) {
     }
 
     SECTION( "keywords" ) {
-        REQUIRE (parseToken("dim").type == TokenType::dim);
         REQUIRE (parseToken("if").type == TokenType::if_);
         REQUIRE (parseToken("else").type == TokenType::else_);
         REQUIRE (parseToken("while").type == TokenType::while_);
@@ -76,28 +75,26 @@ TEST_CASE( "token types test", "[parseToken]" ) {
 
 TEST_CASE ( "lexing whole string test", "[lexString]" ) {
     vector<Token> expected_tok_seq {
-            { TokenType::dim, "dim", 1 },
+            { TokenType::type, "int", 1 },
             { TokenType::identifier, "a", 1 },
-            { TokenType::type, "integer", 1 },
-            { TokenType::op_separator, "\n", 1 },
+            { TokenType::op_separator, ";", 1 },
             { TokenType::identifier, "a", 2 },
             { TokenType::as_, "as", 2 },
             { TokenType::int_number, "1", 2 },
             { TokenType::add_op, "+", 2 },
             { TokenType::int_number, "2", 2 },
             { TokenType::add_op, "+", 2 },
-            { TokenType::int_number, "3", 2 }
+            { TokenType::int_number, "3", 2 },
     };
 
     SECTION ("simple tests")
     {
-        REQUIRE ( lexString("dim a integer\n"
-                                    "a as 1 + 2 + 3") == expected_tok_seq);
+        REQUIRE ( lexString("int a; \n a as 1 + 2 + 3") == expected_tok_seq);
 
         REQUIRE ( lexString("true") == (vector<Token> { { TokenType::bool_const, "true", 1 } }) );
 
-        REQUIRE ( lexString("begin") == (vector<Token> { { TokenType::begin, "begin", 1 } } ));
-        REQUIRE ( lexString("end") == (vector<Token> { { TokenType::end, "end", 1 } } ));
+        REQUIRE ( lexString("{") == (vector<Token> { { TokenType::begin, "{", 1 } } ));
+        REQUIRE ( lexString("}") == (vector<Token> { { TokenType::end, "}", 1 } } ));
     }
 
     SECTION ("no spaces between operators")
@@ -124,15 +121,14 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
     SECTION ("dim with three variables")
     {
-        string str = "dim a,b,c integer";
+        string str = "int a,b,c";
         vector<Token> expected = {
-                { TokenType::dim, "dim", 1 },
+                { TokenType::type, "int", 1 },
                 { TokenType::identifier, "a", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "b", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "c", 1 },
-                { TokenType::type, "integer", 1 }
         };
 
         REQUIRE (lexString(str) == expected);
@@ -140,17 +136,15 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
     SECTION ("two dims separated with colon")
     {
-        string str = "dim a integer : dim b,c integer";
+        string str = "int a; int b,c";
         vector<Token> expected = {
-                { TokenType::dim, "dim", 1 },
+                { TokenType::type, "int", 1 },
                 { TokenType::identifier, "a", 1 },
-                { TokenType::type, "integer", 1 },
-                { TokenType::op_separator, ":", 1},
-                { TokenType::dim, "dim", 1 },
+                { TokenType::op_separator, ";", 1},
+                { TokenType::type, "int", 1 },
                 { TokenType::identifier, "b", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "c", 1 },
-                { TokenType::type, "integer", 1 }
         };
 
         REQUIRE (lexString(str) == expected);
@@ -178,16 +172,15 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
                 { TokenType::int_number, "3", 2 }
         };
         vector<Token> expected3 {
-                { TokenType::op_separator, "\n", 1 },
                 { TokenType::int_number, "3", 2 }
         };
 
-        REQUIRE (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected);
-        REQUIRE (lexString("{gfdgjkfdh\nghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df}3") == expected2);
+        REQUIRE (lexString("/*gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df*/3") == expected);
+        REQUIRE (lexString("/*gfdgjkfdh\nghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df*/3") == expected2);
 
-        REQUIRE_THROWS (lexString("{gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df"));
+        REQUIRE_THROWS (lexString("/*gfdgjkfdh ghfd jghfd jghfdj ghdfj ghdfj ghdfj gjdfkjg df"));
 
-        REQUIRE(lexString("{if a > b then c as b - a else c as a - b}\n3") == expected3);
+        REQUIRE(lexString("/*if a > b then c as b - a else c as a - b*/\n3") == expected3);
 
     }
 }
