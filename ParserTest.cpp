@@ -120,5 +120,7 @@ TEST_CASE( "main test" )
         REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "a,b: float ; a as 2+3.0*(2+4)"));
         REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "a: bool ; b: integer ; a as b < 3 "));
         REQUIRE_THROWS(parseInputWithSemantic(make_shared<ProgramNode>(), "a: bool ; b: integer ; a as b - 3 "));
+
+        REQUIRE_NOTHROW(parseInputWithSemantic(make_shared<ProgramNode>(), "a,b: bool ; b as not a "));
     }
 }

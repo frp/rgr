@@ -521,6 +521,7 @@ void FactorNode::semanticProcess(SemanticContext &context)
     if (!subNode) subNode = dynamic_cast<BoolConstNode*>(subNodes[0].get());
     if (!subNode) subNode = subNodes.size() > 1 ? dynamic_cast<OperandNode*>(subNodes[1].get()) : 0;
     if (!subNode) subNode = subNodes.size() > 1 ? dynamic_cast<ExpressionNode*>(subNodes[1].get()) : 0;
+    if (!subNode) subNode = subNodes.size() > 1 ? dynamic_cast<FactorNode*>(subNodes[1].get()) : 0;
 
     assert(subNode);
 
