@@ -43,6 +43,7 @@ protected:
     virtual std::string dumpInternal();
 public:
     virtual ~SyntaxNode() {}
+    virtual bool feed(SyntaxStack& st, std::vector<Token>::iterator tok) { return feed(st, *tok); }
     virtual bool feed(SyntaxStack& st, const Token& tok) = 0;
 
     virtual std::string dump(int shift = 0);
@@ -319,16 +320,6 @@ public:
     virtual void semanticProcess(SemanticContext &context);
 };
 
-class DimNode : public OneTokenNode
-{
-protected:
-    TokenType acceptedToken() { return TokenType::dim; }
-    virtual std::string className() { return "DimNode"; }
-public:
-    DimNode() {}
-    DimNode(std::string content) { tokenContent = content; }
-};
-
 class TypeNode : public OneTokenNode
 {
 protected:
@@ -338,6 +329,16 @@ public:
     TypeNode() {}
     TypeNode(std::string content) { tokenContent = content; }
     DataType getType();
+};
+
+class VarSeparatorNode : public OneTokenNode
+{
+protected:
+    TokenType acceptedToken() { return TokenType::var_sep; }
+    virtual std::string className() { return "VarSeparatorNode"; }
+public:
+    VarSeparatorNode() {}
+    VarSeparatorNode(std::string content) { tokenContent = content; }
 };
 
 class IdentifierListNode : public ExpandableNode
@@ -651,14 +652,16 @@ public:
     ProgramNode(SyntaxNodeList nodes) { subNodes = nodes; }
 };
 
-class ProgramItemNode : public TransformableNode
+class ProgramItemNode : public NodeWithSubnodes
 {
 protected:
     virtual std::string className() { return "ProgramItemNode"; }
-    virtual TransformationMap transformationMap();
 public:
     ProgramItemNode() {}
     ProgramItemNode(SyntaxNodePtr innerNode) { subNodes.push_back(innerNode); }
+
+    virtual bool feed(SyntaxStack& st, std::vector<Token>::iterator tok);
+    virtual bool feed(SyntaxStack& st, const Token& tok);
 };
 
 class ProgramTailNode : public TailNode

@@ -34,7 +34,7 @@ TEST_CASE( "token types test", "[parseToken]" ) {
     }
 
     SECTION( "keywords" ) {
-        REQUIRE (parseToken("dim").type == TokenType::dim);
+        REQUIRE (parseToken(":").type == TokenType::var_sep);
         REQUIRE (parseToken("if").type == TokenType::if_);
         REQUIRE (parseToken("else").type == TokenType::else_);
         REQUIRE (parseToken("while").type == TokenType::while_);
@@ -76,10 +76,9 @@ TEST_CASE( "token types test", "[parseToken]" ) {
 
 TEST_CASE ( "lexing whole string test", "[lexString]" ) {
     vector<Token> expected_tok_seq {
-            { TokenType::dim, "dim", 1 },
             { TokenType::identifier, "a", 1 },
             { TokenType::type, "integer", 1 },
-            { TokenType::op_separator, "\n", 1 },
+            { TokenType::op_separator, ";", 1 },
             { TokenType::identifier, "a", 2 },
             { TokenType::as_, "as", 2 },
             { TokenType::int_number, "1", 2 },
@@ -91,7 +90,7 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
     SECTION ("simple tests")
     {
-        REQUIRE ( lexString("dim a integer\n"
+        REQUIRE ( lexString("a integer;\n"
                                     "a as 1 + 2 + 3") == expected_tok_seq);
 
         REQUIRE ( lexString("true") == (vector<Token> { { TokenType::bool_const, "true", 1 } }) );
@@ -124,14 +123,14 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
     SECTION ("dim with three variables")
     {
-        string str = "dim a,b,c integer";
+        string str = "a,b,c: integer";
         vector<Token> expected = {
-                { TokenType::dim, "dim", 1 },
                 { TokenType::identifier, "a", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "b", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "c", 1 },
+                { TokenType::var_sep, ":", 1 },
                 { TokenType::type, "integer", 1 }
         };
 
@@ -140,13 +139,11 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
 
     SECTION ("two dims separated with colon")
     {
-        string str = "dim a integer : dim b,c integer";
+        string str = "a integer ; b,c integer";
         vector<Token> expected = {
-                { TokenType::dim, "dim", 1 },
                 { TokenType::identifier, "a", 1 },
                 { TokenType::type, "integer", 1 },
-                { TokenType::op_separator, ":", 1},
-                { TokenType::dim, "dim", 1 },
+                { TokenType::op_separator, ";", 1},
                 { TokenType::identifier, "b", 1 },
                 { TokenType::comma, ",", 1 },
                 { TokenType::identifier, "c", 1 },
@@ -178,7 +175,6 @@ TEST_CASE ( "lexing whole string test", "[lexString]" ) {
                 { TokenType::int_number, "3", 2 }
         };
         vector<Token> expected3 {
-                { TokenType::op_separator, "\n", 1 },
                 { TokenType::int_number, "3", 2 }
         };
 

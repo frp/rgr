@@ -21,7 +21,7 @@ namespace
             { TokenType::identifier, regex("[A-Za-z][A-Za-z0-9]*") },
             { TokenType::int_number, regex("[0-1]+[bB]|[0-7]+[oO]|[0-9A-Fa-f]+[hH]|[0-9]+[dD]?") },
             { TokenType::float_number, regex("[0-9]+[eE][\\+\\-]?[0-9]+|[0-9]*\\.[0-9]+([eE][\\+\\-]?[0-9]+)?")},
-            { TokenType::dim, regex("dim")},
+            { TokenType::var_sep, regex(":")},
             { TokenType::type, regex("integer|float|bool")},
             { TokenType::if_, regex("if")},
             { TokenType::then_, regex("then")},
@@ -34,7 +34,7 @@ namespace
             { TokenType::write_, regex("write")},
             { TokenType::as_, regex("as")},
             { TokenType::comma, regex(",") },
-            { TokenType::op_separator, regex(":|\n") },
+            { TokenType::op_separator, regex(";") },
             { TokenType::openbr, regex("\\(") },
             { TokenType::closebr, regex("\\)") },
             { TokenType::begin, regex("begin") },
@@ -50,7 +50,7 @@ namespace
             { TokenType::identifier, "identifier" },
             { TokenType::int_number, "integral number" },
             { TokenType::float_number, "float number" },
-            { TokenType::dim, "dim" },
+            { TokenType::var_sep, ":"},
             { TokenType::type, "type" },
             { TokenType::if_, "if"},
             { TokenType::then_, "then"},
@@ -83,7 +83,7 @@ namespace
             TokenType::for_,
             TokenType::to_,
             TokenType::do_,
-            TokenType::dim,
+            TokenType::var_sep,
             TokenType::while_,
             TokenType::read_,
             TokenType::write_,
@@ -107,7 +107,7 @@ namespace
             ptr++;
 
             if (input[ptr-1] == '\n')
-                return "\n";
+                line++;
         }
 
         if (ptr == input.size())

@@ -37,7 +37,7 @@ SyntaxNodePtr parseInput(SyntaxNodePtr target, std::vector<Token> tokens)
         SyntaxNodePtr node = stack.front();
         stack.pop_front();
 
-        if (node->feed(stack, *token))
+        if (node->feed(stack, token))
             token++;
     }
 
@@ -273,7 +273,7 @@ SyntaxNodeList ExpressionTailNode::expand()
 
 SyntaxNodeList DeclarationNode::expand()
 {
-    return SyntaxNodeList { make_shared<DimNode>(), make_shared<IdentifierListNode>(), make_shared<TypeNode>() };
+    return SyntaxNodeList { make_shared<IdentifierListNode>(), make_shared<VarSeparatorNode>(), make_shared<TypeNode>() };
 }
 
 SyntaxNodeList IdentifierListNode::expand()
@@ -385,14 +385,6 @@ SyntaxNodeList ProgramNode::expand()
     return SyntaxNodeList { make_shared<ProgramItemNode>(), make_shared<ProgramTailNode>() };
 }
 
-TransformationMap ProgramItemNode::transformationMap()
-{
-    return TransformationMap {
-            { TokenType::dim, SyntaxNodeList { make_shared<DeclarationNode>() } },
-            { TokenType::any, SyntaxNodeList { make_shared<OperatorNode>() } },
-    };
-}
-
 std::set<TokenType> ProgramTailNode::acceptedTokens()
 {
     return std::set<TokenType> { TokenType::op_separator };
@@ -443,7 +435,7 @@ SyntaxNodePtr parseInputWithSemantic(SyntaxNodePtr target, std::string code)
 
 void DeclarationNode::semanticProcess(SemanticContext &context)
 {
-    IdentifierListNode* identifierListNode = dynamic_cast<IdentifierListNode*>(subNodes[1].get());
+    IdentifierListNode* identifierListNode = dynamic_cast<IdentifierListNode*>(subNodes[0].get());
     TypeNode* typeNode = dynamic_cast<TypeNode*>(subNodes[2].get());
 
     assert(identifierListNode);
@@ -670,4 +662,21 @@ std::string OneTokenNode::dumpInternal()
         return className() + " { " + tokenContent + " } " + "(type = " + dumpType(thisWithType->getType()) + ")" + "\n";
     else
         return className() + className() + " { " + tokenContent + " }\n";
+}
+
+bool ProgramItemNode::feed(SyntaxStack &st, const Token &tok)
+{
+    assert(false);
+    return false; // for sanity, this will never be called
+}
+
+bool ProgramItemNode::feed(SyntaxStack &st, std::vector<Token>::iterator tok)
+{
+    if (tok->type == TokenType::identifier && ((tok+1)->type == TokenType::comma || (tok+1)->type == TokenType::var_sep ))
+        subNodes.push_back(make_shared<DeclarationNode>());
+    else
+        subNodes.push_back(make_shared<OperatorNode>());
+
+    pushListToStack(st, subNodes);
+    return false;
 }
