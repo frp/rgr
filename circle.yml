@@ -1,0 +1,6 @@
+dependencies:
+  override:
+    - cmake .; make
+test:
+  override:
+    ./rgr_test
