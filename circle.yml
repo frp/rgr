@@ -1,4 +1,8 @@
 dependencies:
+  pre:
+    - sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+    - sudo apt-get update; sudo apt-get install gcc-5 g++-5
+    - export CXX="g++-5"
   override:
     - cmake .; make
 test:
