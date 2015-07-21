@@ -3,4 +3,4 @@ dependencies:
     - cmake .; make
 test:
   override:
-    ./rgr_test
+    - ./rgr_test
